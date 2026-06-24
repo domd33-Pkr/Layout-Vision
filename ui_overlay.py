@@ -76,8 +76,8 @@ class KeyWidget(QLabel):
         self.setText(text)
 
     def update_style(self):
-        base_color = "rgba(40, 44, 52, 220)" if not self.is_pressed else "rgba(97, 175, 239, 240)"
-        border_color = "rgba(171, 178, 191, 100)" if not self.is_pressed else "rgba(97, 175, 239, 255)"
+        base_color = "rgba(40, 44, 52, 60)" if not self.is_pressed else "rgba(97, 175, 239, 140)"
+        border_color = "rgba(171, 178, 191, 50)" if not self.is_pressed else "rgba(97, 175, 239, 200)"
         text_color = "#ABB2BF" if not self.is_pressed else "#282C34"
         
         self.setStyleSheet(f"""
@@ -137,13 +137,13 @@ class LayoutOverlay(QWidget):
         
         # Draw background shapes mimicking the original web layout
         left_half = QGraphicsRectItem(0, 0, 450, 290)
-        left_half.setBrush(QBrush(QColor(30, 41, 59, 120)))
-        left_half.setPen(QPen(QColor(255, 255, 255, 20), 1))
+        left_half.setBrush(QBrush(QColor(30, 41, 59, 40)))
+        left_half.setPen(QPen(QColor(255, 255, 255, 10), 1))
         self.scene.addItem(left_half)
 
         right_half = QGraphicsRectItem(510, 0, 450, 290)
-        right_half.setBrush(QBrush(QColor(30, 41, 59, 120)))
-        right_half.setPen(QPen(QColor(255, 255, 255, 20), 1))
+        right_half.setBrush(QBrush(QColor(30, 41, 59, 40)))
+        right_half.setPen(QPen(QColor(255, 255, 255, 10), 1))
         self.scene.addItem(right_half)
         
         self.view = TransparentGraphicsView(self.scene, self)

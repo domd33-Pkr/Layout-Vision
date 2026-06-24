@@ -5,6 +5,10 @@ from serial_reader import SerialReaderThread
 from ui_overlay import LayoutOverlay
 
 def main():
+    # Force XWayland instead of native Wayland to ensure 
+    # FramelessWindowHint and WindowStaysOnTopHint are respected
+    os.environ["QT_QPA_PLATFORM"] = "xcb"
+    
     app = QApplication(sys.argv)
     
     # Path to layout data
