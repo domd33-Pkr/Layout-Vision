@@ -1,7 +1,7 @@
 import json
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication, QGraphicsView, QGraphicsScene, QGraphicsProxyWidget, QGraphicsRectItem
 from PySide6.QtCore import Qt, QPoint, QRectF
-from PySide6.QtGui import QColor, QPen, QBrush
+from PySide6.QtGui import QColor, QPen, QBrush, QPainter
 
 POSITIONS = {
     10: {"x": 12, "y": 130, "r": 0},
@@ -110,7 +110,7 @@ class TransparentGraphicsView(QGraphicsView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         # Enable anti-aliasing for smooth rotated rendering
-        self.setRenderHints(self.renderHints() | Qt.Antialiasing | Qt.SmoothPixmapTransform)
+        self.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
 class LayoutOverlay(QWidget):
     def __init__(self, json_path):
