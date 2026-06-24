@@ -9,6 +9,10 @@ def main():
     # Allow Ctrl+C to kill the Qt application gracefully
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     
+    # On Wayland, "Always on Top" is blocked by design.
+    # We MUST force XWayland (xcb) to bypass this restriction.
+    os.environ["QT_QPA_PLATFORM"] = "xcb"
+    
     app = QApplication(sys.argv)
     
     # Path to layout data
