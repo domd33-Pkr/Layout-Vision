@@ -191,6 +191,8 @@ class LayoutOverlay(QWidget):
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.oldPos = event.globalPos()
+        elif event.button() == Qt.RightButton:
+            QApplication.quit()
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.LeftButton:

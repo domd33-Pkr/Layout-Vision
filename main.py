@@ -1,10 +1,13 @@
 import sys
 import os
+import signal
 from PySide6.QtWidgets import QApplication
 from serial_reader import SerialReaderThread
 from ui_overlay import LayoutOverlay
 
 def main():
+    # Allow Ctrl+C to kill the Qt application gracefully
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
     # Force XWayland instead of native Wayland to ensure 
     # FramelessWindowHint and WindowStaysOnTopHint are respected
     os.environ["QT_QPA_PLATFORM"] = "xcb"
