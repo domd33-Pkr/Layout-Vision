@@ -1,0 +1,14 @@
+# Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Data (we probably don't want to push the user's personal layout json, but since it's an overlay project, let's ignore the data folder or just let it be? The layout json was copied to `data/layout.json` earlier, but then we changed it to read directly from the Archive folder. So `data/` is not strictly needed anymore, let's ignore it)
+data/
