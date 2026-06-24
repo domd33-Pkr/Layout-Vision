@@ -8,9 +8,6 @@ from ui_overlay import LayoutOverlay
 def main():
     # Allow Ctrl+C to kill the Qt application gracefully
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-    # Force XWayland instead of native Wayland to ensure 
-    # FramelessWindowHint and WindowStaysOnTopHint are respected
-    os.environ["QT_QPA_PLATFORM"] = "xcb"
     
     app = QApplication(sys.argv)
     
