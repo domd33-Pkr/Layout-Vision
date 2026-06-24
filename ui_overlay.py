@@ -1,5 +1,5 @@
 import json
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication, QGraphicsView, QGraphicsScene, QGraphicsProxyWidget, QGraphicsRectItem
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication, QGraphicsView, QGraphicsScene, QGraphicsProxyWidget, QGraphicsRectItem, QSizeGrip
 from PySide6.QtCore import Qt, QPoint, QRectF
 from PySide6.QtGui import QColor, QPen, QBrush, QPainter
 
@@ -128,6 +128,7 @@ class LayoutOverlay(QWidget):
         )
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setWindowOpacity(0.9)
+        self.resize(960, 290)
         
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
@@ -147,11 +148,21 @@ class LayoutOverlay(QWidget):
         self.scene.addItem(right_half)
         
         self.view = TransparentGraphicsView(self.scene, self)
-        self.view.setFixedSize(960, 290)
+        self.view.setAttribute(Qt.WA_TransparentForMouseEvents)
         
         self.main_layout.addWidget(self.view)
         
+        self.size_grip = QSizeGrip(self)
+        self.size_grip.setFixedSize(20, 20)
+        self.size_grip.setStyleSheet("background-color: rgba(255, 255, 255, 30); border-radius: 10px;")
+        
         self.oldPos = self.pos()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+        self.size_grip.move(self.width() - self.size_grip.width(), self.height() - self.size_grip.height())
+        self.size_grip.raise_()
 
     def load_layout(self):
         with open(self.json_path, 'r') as f:
