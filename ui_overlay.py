@@ -210,3 +210,12 @@ class LayoutOverlay(QWidget):
             delta = QPoint(event.globalPos() - self.oldPos)
             self.move(self.x() + delta.x(), self.y() + delta.y())
             self.oldPos = event.globalPos()
+
+    def wheelEvent(self, event):
+        delta = event.angleDelta().y()
+        if delta != 0:
+            step = 0.05
+            new_opacity = self.windowOpacity() + (step if delta > 0 else -step)
+            # Limit transparency between 10% and 100%
+            new_opacity = max(0.1, min(1.0, new_opacity))
+            self.setWindowOpacity(new_opacity)

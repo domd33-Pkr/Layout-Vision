@@ -34,7 +34,9 @@ def main():
     reader_thread.layer_changed_signal.connect(overlay.on_layer_changed)
     reader_thread.start()
     
-    sys.exit(app.exec())
+    ret = app.exec()
+    reader_thread.stop()
+    sys.exit(ret)
 
 if __name__ == "__main__":
     main()
