@@ -1,5 +1,6 @@
 import json
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication, QGraphicsView, QGraphicsScene, QGraphicsProxyWidget, QGraphicsRectItem, QSizeGrip
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication, QGraphicsView, QGraphicsScene, QGraphicsProxyWidget, QGraphicsRectItem, QSizeGrip, QToolTip
+from PySide6.QtGui import QColor, QPen, QBrush, QPainter, QCursor
 from PySide6.QtCore import Qt, QPoint, QRectF
 from PySide6.QtGui import QColor, QPen, QBrush, QPainter
 
@@ -101,6 +102,58 @@ class KeyWidget(QLabel):
             text = f"{tap}\n-\n{hold}"
             
         self.setText(text)
+        
+        
+        # Save full raw text for tooltip
+        if l_hold:
+            self.full_text = f"Tap: {l_tap}\nHold: {l_hold}"
+        elif l_tap:
+            self.full_text = f"{l_tap}"
+        else:
+            self.full_text = ""
+            
+        # ZMK Literature replacements
+        zmk_names = {
+            'NUMBER_1': 'Keyboard 1 and !',
+            'NUMBER_2': 'Keyboard 2 and @',
+            'NUMBER_3': 'Keyboard 3 and #',
+            'NUMBER_4': 'Keyboard 4 and Dollar',
+            'NUMBER_5': 'Keyboard 5 and %',
+            'NUMBER_6': 'Keyboard 6 and ^',
+            'NUMBER_7': 'Keyboard 7 and &',
+            'NUMBER_8': 'Keyboard 8 and *',
+            'NUMBER_9': 'Keyboard 9 and (',
+            'NUMBER_0': 'Keyboard 0 and )',
+            'N1': 'Keyboard 1 and !',
+            'N2': 'Keyboard 2 and @',
+            'N3': 'Keyboard 3 and #',
+            'N4': 'Keyboard 4 and Dollar',
+            'N5': 'Keyboard 5 and %',
+            'N6': 'Keyboard 6 and ^',
+            'N7': 'Keyboard 7 and &',
+            'N8': 'Keyboard 8 and *',
+            'N9': 'Keyboard 9 and (',
+            'N0': 'Keyboard 0 and )',
+            'MINUS': 'Keyboard - and _',
+            'EQUAL': 'Keyboard = and +',
+            'LBKT': 'Keyboard [ and {',
+            'RBKT': 'Keyboard ] and }',
+            'BSLH': 'Keyboard \\ and |',
+            'SEMI': 'Keyboard ; and :',
+            'SQT': 'Keyboard \' and "',
+            'GRAVE': 'Keyboard ` and ~',
+            'COMMA': 'Keyboard , and <',
+            'DOT': 'Keyboard . and >',
+            'FSLH': 'Keyboard / and ?'
+        }
+        
+        for k, v in zmk_names.items():
+            if k in text:
+                text = text.replace(k, v)
+            if hasattr(self, 'full_text') and k in self.full_text:
+                self.full_text = self.full_text.replace(k, v)
+                
+        self.setText(text)
 
     def update_style(self):
         base_color = "rgba(40, 44, 52, 60)" if not self.is_pressed else "rgba(97, 175, 239, 140)"
@@ -140,6 +193,15 @@ class KeyWidget(QLabel):
         if changed:
             self.update_text()
 
+    def enterEvent(self, event):
+        super().enterEvent(event)
+        if hasattr(self, 'full_text') and self.full_text:
+            QToolTip.showText(QCursor.pos(), self.full_text, self)
+
+    def leaveEvent(self, event):
+        super().leaveEvent(event)
+        QToolTip.hideText()
+
 class TransparentGraphicsView(QGraphicsView):
     def __init__(self, scene, parent=None):
         super().__init__(scene, parent)
@@ -148,6 +210,14 @@ class TransparentGraphicsView(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         # Enable anti-aliasing for smooth rotated rendering
         self.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+
+    def mousePressEvent(self, event):
+        event.ignore()
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        event.ignore()
+        super().mouseMoveEvent(event)
 
 class LayoutOverlay(QWidget):
     def __init__(self, json_path):
@@ -163,8 +233,22 @@ class LayoutOverlay(QWidget):
         self.setWindowFlags(
             Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.Tool
         )
-        self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setWindowOpacity(0.9)
+        self.setWindowOpacity(1.0)
+        self.setStyleSheet("""
+            LayoutOverlay {
+                background-color: #0f172a;
+            }
+            QToolTip {
+                background-color: #1e293b;
+                color: #e2e8f0;
+                border: 2px solid #3b82f6;
+                border-radius: 6px;
+                padding: 6px;
+                font-size: 14px;
+                font-family: 'Inter', sans-serif;
+                font-weight: bold;
+            }
+        """)
         self.resize(960, 290)
         
         self.main_layout = QVBoxLayout(self)
@@ -175,17 +259,16 @@ class LayoutOverlay(QWidget):
         
         # Draw background shapes mimicking the original web layout
         left_half = QGraphicsRectItem(0, 0, 450, 290)
-        left_half.setBrush(QBrush(QColor(30, 41, 59, 40)))
-        left_half.setPen(QPen(QColor(255, 255, 255, 10), 1))
+        left_half.setBrush(QBrush(QColor(30, 41, 59, 255)))
+        left_half.setPen(QPen(QColor(255, 255, 255, 20), 1))
         self.scene.addItem(left_half)
 
         right_half = QGraphicsRectItem(510, 0, 450, 290)
-        right_half.setBrush(QBrush(QColor(30, 41, 59, 40)))
-        right_half.setPen(QPen(QColor(255, 255, 255, 10), 1))
+        right_half.setBrush(QBrush(QColor(30, 41, 59, 255)))
+        right_half.setPen(QPen(QColor(255, 255, 255, 20), 1))
         self.scene.addItem(right_half)
         
         self.view = TransparentGraphicsView(self.scene, self)
-        self.view.setAttribute(Qt.WA_TransparentForMouseEvents)
         
         self.main_layout.addWidget(self.view)
         
