@@ -34,6 +34,7 @@ class KeyWidget(QLabel):
         self.index = key_data['index']
         self.is_pressed = False
         self.current_layer = 0
+        self.active_layers = [0]
         
         self.setAlignment(Qt.AlignCenter)
         self.setFixedSize(64, 64)
@@ -41,13 +42,32 @@ class KeyWidget(QLabel):
         self.update_text()
         
     def update_text(self):
-        layer_str = str(self.current_layer)
         bindings = self.key_data.get('bindings', {})
-        # Fallback to layer 0 if binding not defined for current layer
-        layer_bindings = bindings.get(layer_str, bindings.get("0", {}))
         
-        tap = layer_bindings.get('tap', '')
-        hold = layer_bindings.get('hold', '')
+        # Sort active layers descending to simulate a layer stack
+        sorted_layers = sorted(list(self.active_layers), reverse=True)
+        if 0 not in sorted_layers:
+            sorted_layers.append(0)
+            
+        tap = ""
+        hold = ""
+        
+        # Traverse the active layers stack downwards to find the first non-empty binding (handling &trans)
+        for layer in sorted_layers:
+            layer_bindings = bindings.get(str(layer), {})
+            l_tap = layer_bindings.get('tap', '')
+            l_hold = layer_bindings.get('hold', '')
+            
+            if l_tap != "":
+                tap = l_tap
+                hold = l_hold
+                break
+                
+        # Ultimate fallback
+        if tap == "":
+            layer_bindings = bindings.get("0", {})
+            tap = layer_bindings.get('tap', '')
+            hold = layer_bindings.get('hold', '')
         
         # Clean up some ZMK specific codes for display
         if tap.startswith('&ht'):
@@ -57,7 +77,14 @@ class KeyWidget(QLabel):
             tap = tap.replace('&kp', '').replace('&mo', 'L').replace('&mt', '').strip()
         elif tap.startswith('&mtl'):
             parts = tap.split(' ')
-            tap = parts[-1] if len(parts) > 1 else tap
+            if len(parts) >= 3:
+                # &mtl hold tap
+                hold_val = parts[1]
+                tap_val = parts[2]
+                tap = tap_val
+                hold = hold_val
+            else:
+                tap = parts[-1] if len(parts) > 1 else tap
             
         if tap.startswith('LCTL('):
             tap = '^' + tap.split('(')[1].replace(')', '')
@@ -98,9 +125,19 @@ class KeyWidget(QLabel):
             self.is_pressed = pressed
             self.update_style()
             
-    def set_layer(self, layer):
+    def set_layer(self, layer, active_layers=None):
+        changed = False
         if self.current_layer != layer:
             self.current_layer = layer
+            changed = True
+        
+        if active_layers is not None:
+            new_active = list(active_layers)
+            if self.active_layers != new_active:
+                self.active_layers = new_active
+                changed = True
+                
+        if changed:
             self.update_text()
 
 class TransparentGraphicsView(QGraphicsView):
@@ -189,15 +226,17 @@ class LayoutOverlay(QWidget):
             self.keys[position].set_pressed(state)
 
     def on_layer_changed(self, layer, state):
+        print(f"[OVERLAY] Layer changed signal received: layer={layer}, state={state}")
         if state:
             self.active_layers.add(layer)
         else:
             self.active_layers.discard(layer)
             
+        print(f"[OVERLAY] Active layers: {self.active_layers}")
         highest_layer = max(self.active_layers) if self.active_layers else 0
         
         for widget in self.keys.values():
-            widget.set_layer(highest_layer)
+            widget.set_layer(highest_layer, self.active_layers)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:

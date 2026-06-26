@@ -1,6 +1,7 @@
 import re
 import time
 import serial
+import os
 from PySide6.QtCore import QThread, Signal
 
 class SerialReaderThread(QThread):
@@ -12,14 +13,22 @@ class SerialReaderThread(QThread):
         self.port = port
         self.baudrate = baudrate
         self.running = False
-        self.pos_pattern = re.compile(r"position_state_changed: position (\d+) state (\d+)")
-        self.layer_pattern = re.compile(r"layer_state_changed: layer (\d+) state (\d+)")
+        self.pos_pattern = re.compile(r"(?:position_state_changed: position (\d+) state (\d+))|(?:position: (\d+), pressed: (true|false))")
+        self.layer_pattern = re.compile(r"(?:layer_state_changed: layer (\d+) state (\d+))|(?:layer_changed: layer (\d+) state (\d+))")
+
+    def get_port(self):
+        for p in ['/dev/ttyACM1', '/dev/ttyACM0']:
+            if os.path.exists(p):
+                return p
+        return self.port
 
     def run(self):
         self.running = True
         while self.running:
             try:
-                with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
+                active_port = self.get_port()
+                with serial.Serial(active_port, self.baudrate, timeout=1) as ser:
+                    print(f"[SERIAL] Connected to {active_port}")
                     while self.running:
                         if ser.in_waiting:
                             line = ser.readline().decode('utf-8', errors='ignore').strip()
@@ -29,16 +38,25 @@ class SerialReaderThread(QThread):
                             # Match position
                             m_pos = self.pos_pattern.search(line)
                             if m_pos:
-                                position = int(m_pos.group(1))
-                                state = bool(int(m_pos.group(2)))
+                                if m_pos.group(1) is not None:
+                                    position = int(m_pos.group(1))
+                                    state = bool(int(m_pos.group(2)))
+                                else:
+                                    position = int(m_pos.group(3))
+                                    state = True if m_pos.group(4) == 'true' else False
                                 self.key_pressed_signal.emit(position, state)
                                 continue
                             
                             # Match layer
                             m_layer = self.layer_pattern.search(line)
                             if m_layer:
-                                layer = int(m_layer.group(1))
-                                state = bool(int(m_layer.group(2)))
+                                if m_layer.group(1) is not None:
+                                    layer = int(m_layer.group(1))
+                                    state = bool(int(m_layer.group(2)))
+                                else:
+                                    layer = int(m_layer.group(3))
+                                    state = bool(int(m_layer.group(4)))
+                                print(f"[MATCH] layer {layer} state {state}")
                                 self.layer_changed_signal.emit(layer, state)
             except Exception as e:
                 # Retry connection after a delay
