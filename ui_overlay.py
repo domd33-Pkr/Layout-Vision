@@ -284,6 +284,10 @@ class LayoutOverlay(QWidget):
         self.size_grip.move(self.width() - self.size_grip.width(), self.height() - self.size_grip.height())
         self.size_grip.raise_()
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+
     def load_layout(self):
         with open(self.json_path, 'r') as f:
             data = json.load(f)
