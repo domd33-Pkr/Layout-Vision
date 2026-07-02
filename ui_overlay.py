@@ -29,9 +29,10 @@ POSITIONS = {
 }
 
 class KeyWidget(QLabel):
-    def __init__(self, key_data, parent=None):
+    def __init__(self, key_data, layer_names=None, parent=None):
         super().__init__(parent)
         self.key_data = key_data
+        self.layer_names = layer_names or {}
         self.index = key_data['index']
         self.is_pressed = False
         self.current_layer = 0
@@ -71,21 +72,37 @@ class KeyWidget(QLabel):
             hold = layer_bindings.get('hold', '')
         
         # Clean up some ZMK specific codes for display
+        def get_layer_name(layer_id_str):
+            return self.layer_names.get(layer_id_str, f"L{layer_id_str}")
+
         if tap.startswith('&ht'):
             parts = tap.split(' ')
             tap = parts[-1] if len(parts) > 1 else tap
-        elif tap.startswith('&kp') or tap.startswith('&mo') or tap.startswith('&mt'):
-            tap = tap.replace('&kp', '').replace('&mo', 'L').replace('&mt', '').strip()
+        elif tap.startswith('&lt'):
+            parts = tap.split(' ')
+            if len(parts) >= 3:
+                hold = get_layer_name(parts[1])
+                tap = parts[2]
+            else:
+                tap = parts[-1] if len(parts) > 1 else tap
         elif tap.startswith('&mtl'):
             parts = tap.split(' ')
             if len(parts) >= 3:
                 # &mtl hold tap
-                hold_val = parts[1]
+                hold_val = get_layer_name(parts[1])
                 tap_val = parts[2]
                 tap = tap_val
                 hold = hold_val
             else:
                 tap = parts[-1] if len(parts) > 1 else tap
+        elif tap.startswith('&mo') or tap.startswith('&to') or tap.startswith('&tog') or tap.startswith('&sl'):
+            parts = tap.split(' ')
+            if len(parts) > 1:
+                tap = get_layer_name(parts[1])
+            else:
+                tap = tap.replace('&mo', '').replace('&to', '').replace('&tog', '').replace('&sl', '').strip()
+        elif tap.startswith('&kp') or tap.startswith('&mt'):
+            tap = tap.replace('&kp', '').replace('&mt', '').strip()
             
         if tap.startswith('LCTL('):
             tap = '^' + tap.split('(')[1].replace(')', '')
@@ -292,9 +309,13 @@ class LayoutOverlay(QWidget):
         with open(self.json_path, 'r') as f:
             data = json.load(f)
             
+        layer_names = {}
+        for layer in data.get('layers', []):
+            layer_names[str(layer.get('id', ''))] = layer.get('name', '')
+            
         for key in data.get('keys', []):
             index = key['index']
-            widget = KeyWidget(key)
+            widget = KeyWidget(key, layer_names=layer_names)
             
             proxy = self.scene.addWidget(widget)
             
