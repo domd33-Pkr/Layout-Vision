@@ -90,7 +90,7 @@ class KeyWidget(QLabel):
             if len(parts) >= 3:
                 # &mtl hold tap
                 hold_val = get_layer_name(parts[1])
-                tap_val = parts[2]
+                tap_val = get_layer_name(parts[2])
                 tap = tap_val
                 hold = hold_val
             else:
@@ -131,26 +131,36 @@ class KeyWidget(QLabel):
             
         # ZMK Literature replacements
         zmk_names = {
-            'NUMBER_1': 'Keyboard 1 and !',
-            'NUMBER_2': 'Keyboard 2 and @',
-            'NUMBER_3': 'Keyboard 3 and #',
-            'NUMBER_4': 'Keyboard 4 and Dollar',
-            'NUMBER_5': 'Keyboard 5 and %',
-            'NUMBER_6': 'Keyboard 6 and ^',
-            'NUMBER_7': 'Keyboard 7 and &',
-            'NUMBER_8': 'Keyboard 8 and *',
-            'NUMBER_9': 'Keyboard 9 and (',
-            'NUMBER_0': 'Keyboard 0 and )',
-            'N1': 'Keyboard 1 and !',
-            'N2': 'Keyboard 2 and @',
-            'N3': 'Keyboard 3 and #',
-            'N4': 'Keyboard 4 and Dollar',
-            'N5': 'Keyboard 5 and %',
-            'N6': 'Keyboard 6 and ^',
-            'N7': 'Keyboard 7 and &',
-            'N8': 'Keyboard 8 and *',
-            'N9': 'Keyboard 9 and (',
-            'N0': 'Keyboard 0 and )',
+            'NUMBER_1': '1',
+            'NUMBER_2': '2',
+            'NUMBER_3': '3',
+            'NUMBER_4': '4',
+            'NUMBER_5': '5',
+            'NUMBER_6': '6',
+            'NUMBER_7': '7',
+            'NUMBER_8': '8',
+            'NUMBER_9': '9',
+            'NUMBER_0': '0',
+            'N1': '1',
+            'N2': '2',
+            'N3': '3',
+            'N4': '4',
+            'N5': '5',
+            'N6': '6',
+            'N7': '7',
+            'N8': '8',
+            'N9': '9',
+            'N0': '0',
+            'KP_NUMBER_1': '1',
+            'KP_NUMBER_2': '2',
+            'KP_NUMBER_3': '3',
+            'KP_NUMBER_4': '4',
+            'KP_NUMBER_5': '5',
+            'KP_NUMBER_6': '6',
+            'KP_NUMBER_7': '7',
+            'KP_NUMBER_8': '8',
+            'KP_NUMBER_9': '9',
+            'KP_NUMBER_0': '0',
             'MINUS': 'Keyboard - and _',
             'EQUAL': 'Keyboard = and +',
             'LBKT': 'Keyboard [ and {',
@@ -229,12 +239,18 @@ class TransparentGraphicsView(QGraphicsView):
         self.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
     def mousePressEvent(self, event):
-        event.ignore()
-        super().mousePressEvent(event)
+        item = self.itemAt(event.position().toPoint())
+        if isinstance(item, QGraphicsProxyWidget) and isinstance(item.widget(), KeyWidget):
+            super().mousePressEvent(event)
+        else:
+            event.ignore()
 
     def mouseMoveEvent(self, event):
-        event.ignore()
-        super().mouseMoveEvent(event)
+        item = self.itemAt(event.position().toPoint())
+        if isinstance(item, QGraphicsProxyWidget) and isinstance(item.widget(), KeyWidget):
+            super().mouseMoveEvent(event)
+        else:
+            event.ignore()
 
 class LayoutOverlay(QWidget):
     def __init__(self, json_path):
@@ -348,15 +364,15 @@ class LayoutOverlay(QWidget):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.oldPos = event.globalPos()
+            self.oldPos = event.globalPosition().toPoint()
         elif event.button() == Qt.RightButton:
             QApplication.quit()
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.LeftButton:
-            delta = QPoint(event.globalPos() - self.oldPos)
+            delta = QPoint(event.globalPosition().toPoint() - self.oldPos)
             self.move(self.x() + delta.x(), self.y() + delta.y())
-            self.oldPos = event.globalPos()
+            self.oldPos = event.globalPosition().toPoint()
 
     def wheelEvent(self, event):
         delta = event.angleDelta().y()
