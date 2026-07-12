@@ -75,35 +75,72 @@ class KeyWidget(QLabel):
         def get_layer_name(layer_id_str):
             return self.layer_names.get(layer_id_str, f"L{layer_id_str}")
 
-        if tap.startswith('&ht'):
-            parts = tap.split(' ')
-            tap = parts[-1] if len(parts) > 1 else tap
-        elif tap.startswith('&lt'):
-            parts = tap.split(' ')
-            if len(parts) >= 3:
-                hold = get_layer_name(parts[1])
-                tap = parts[2]
-            else:
-                tap = parts[-1] if len(parts) > 1 else tap
-        elif tap.startswith('&mtl'):
-            parts = tap.split(' ')
-            if len(parts) >= 3:
-                # &mtl hold tap
-                hold_val = get_layer_name(parts[1])
-                tap_val = get_layer_name(parts[2])
-                tap = tap_val
-                hold = hold_val
-            else:
-                tap = parts[-1] if len(parts) > 1 else tap
-        elif tap.startswith('&mo') or tap.startswith('&to') or tap.startswith('&tog') or tap.startswith('&sl'):
-            parts = tap.split(' ')
-            if len(parts) > 1:
-                tap = get_layer_name(parts[1])
-            else:
-                tap = tap.replace('&mo', '').replace('&to', '').replace('&tog', '').replace('&sl', '').strip()
-        elif tap.startswith('&kp') or tap.startswith('&mt'):
-            tap = tap.replace('&kp', '').replace('&mt', '').strip()
-            
+        parts = tap.strip().split()
+        behavior = parts[0] if parts else ""
+
+        if behavior.startswith('&'):
+            if behavior == '&kp':
+                tap = ' '.join(parts[1:])
+            elif behavior in ('&mo', '&to', '&tog', '&sl'):
+                tap = get_layer_name(parts[1]) if len(parts) > 1 else ""
+            elif behavior == '&trans':
+                tap = '▽'
+            elif behavior == '&none':
+                tap = '·'
+            elif behavior == '&mt':
+                hold = parts[1] if len(parts) > 1 else ""
+                tap = ' '.join(parts[2:]) if len(parts) > 2 else ""
+            elif behavior == '&lt':
+                hold = get_layer_name(parts[1]) if len(parts) > 1 else ""
+                tap = ' '.join(parts[2:]) if len(parts) > 2 else ""
+            elif behavior == '&mtl':
+                hold = get_layer_name(parts[1]) if len(parts) > 1 else ""
+                tap = get_layer_name(parts[2]) if len(parts) > 2 else ""
+            elif behavior == '&ht':
+                hold = parts[1] if len(parts) > 1 else ""
+                tap = ' '.join(parts[2:]) if len(parts) > 2 else ""
+
+        # Function to handle shift character mapping
+        def get_shifted_val(val):
+            import re
+            val = val.strip()
+            match = re.match(r'^(?:RSFT|LSFT|RS|LS|LSHIFT|RSHIFT)\((.*)\)$', val, re.IGNORECASE)
+            if match:
+                inner = match.group(1).strip()
+                clean_inner = re.sub(r'^(?:KP_)?NUMBER_', '', inner)
+                shift_map = {
+                    '1': '!',
+                    '2': '@',
+                    '3': '#',
+                    '4': '$',
+                    '5': '%',
+                    '6': '^',
+                    '7': '&',
+                    '8': '*',
+                    '9': '(',
+                    '0': ')',
+                    'MINUS': '_',
+                    'EQUAL': '+',
+                    'GRAVE': '~',
+                    'LBKT': '{',
+                    'RBKT': '}',
+                    'BSLH': '|',
+                    'SEMI': ':',
+                    'SQT': '"',
+                    'COMMA': '<',
+                    'DOT': '>',
+                    'FSLH': '?',
+                    'SLASH': '?'
+                }
+                if clean_inner in shift_map:
+                    return shift_map[clean_inner]
+                return clean_inner
+            return val
+
+        tap = get_shifted_val(tap)
+        if hold:
+            hold = get_shifted_val(hold)
+
         if tap.startswith('LCTL('):
             tap = '^' + tap.split('(')[1].replace(')', '')
         if tap.startswith('RSFT(') or tap.startswith('LSFT(') or tap.startswith('RS(') or tap.startswith('LS('):
@@ -161,17 +198,17 @@ class KeyWidget(QLabel):
             'KP_NUMBER_8': '8',
             'KP_NUMBER_9': '9',
             'KP_NUMBER_0': '0',
-            'MINUS': 'Keyboard - and _',
-            'EQUAL': 'Keyboard = and +',
-            'LBKT': 'Keyboard [ and {',
-            'RBKT': 'Keyboard ] and }',
-            'BSLH': 'Keyboard \\ and |',
-            'SEMI': 'Keyboard ; and :',
-            'SQT': 'Keyboard \' and "',
-            'GRAVE': 'Keyboard ` and ~',
-            'COMMA': 'Keyboard , and <',
-            'DOT': 'Keyboard . and >',
-            'FSLH': 'Keyboard / and ?'
+            'MINUS': '-',
+            'EQUAL': '=',
+            'LBKT': '[',
+            'RBKT': ']',
+            'BSLH': '\\',
+            'SEMI': ';',
+            'SQT': '\'',
+            'GRAVE': '`',
+            'COMMA': ',',
+            'DOT': '.',
+            'FSLH': '/'
         }
         
         for k, v in zmk_names.items():
