@@ -60,7 +60,7 @@ class KeyWidget(QLabel):
             l_tap = layer_bindings.get('tap', '')
             l_hold = layer_bindings.get('hold', '')
             
-            if l_tap != "":
+            if l_tap != "" and l_tap.strip() != "&trans":
                 tap = l_tap
                 hold = l_hold
                 break
