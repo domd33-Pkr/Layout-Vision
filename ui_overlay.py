@@ -1,8 +1,17 @@
 import json
+from datetime import datetime
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication, QGraphicsView, QGraphicsScene, QGraphicsProxyWidget, QGraphicsRectItem, QSizeGrip, QToolTip
 from PySide6.QtGui import QColor, QPen, QBrush, QPainter, QCursor
 from PySide6.QtCore import Qt, QPoint, QRectF
 from PySide6.QtGui import QColor, QPen, QBrush, QPainter
+
+def log_debug(msg):
+    try:
+        with open('/home/dominic/Documents/Claviers/Layout Vision/layout_vision_debug.log', 'a') as f:
+            f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}] {msg}\n")
+    except Exception:
+        pass
+
 
 POSITIONS = {
     10: {"x": 12, "y": 130, "r": 0},
@@ -208,7 +217,10 @@ class KeyWidget(QLabel):
             'GRAVE': '`',
             'COMMA': ',',
             'DOT': '.',
-            'FSLH': '/'
+            'FSLH': '/',
+            'DELTA': 'Δ',
+            'OHM': 'Ω',
+            'DEGREE': '°'
         }
         
         for k, v in zmk_names.items():
@@ -217,6 +229,7 @@ class KeyWidget(QLabel):
             if hasattr(self, 'full_text') and k in self.full_text:
                 self.full_text = self.full_text.replace(k, v)
                 
+        log_debug(f"widget {self.index} update_text: active_layers={self.active_layers}, sorted_layers={sorted_layers}, tap={tap}, hold={hold}, text={text}")
         self.setText(text)
 
     def update_style(self):
@@ -243,6 +256,7 @@ class KeyWidget(QLabel):
             self.update_style()
             
     def set_layer(self, layer, active_layers=None):
+        log_debug(f"widget {self.index} set_layer called: layer={layer}, active_layers={active_layers}, self.current_layer={self.current_layer}, self.active_layers={self.active_layers}")
         changed = False
         if self.current_layer != layer:
             self.current_layer = layer
@@ -250,11 +264,12 @@ class KeyWidget(QLabel):
         
         if active_layers is not None:
             new_active = list(active_layers)
-            if self.active_layers != new_active:
+            if set(self.active_layers) != set(new_active):
                 self.active_layers = new_active
                 changed = True
                 
         if changed:
+            log_debug(f"widget {self.index} set_layer triggering update_text")
             self.update_text()
 
     def enterEvent(self, event):
@@ -387,13 +402,13 @@ class LayoutOverlay(QWidget):
             self.keys[position].set_pressed(state)
 
     def on_layer_changed(self, layer, state):
-        print(f"[OVERLAY] Layer changed signal received: layer={layer}, state={state}")
+        log_debug(f"on_layer_changed: layer={layer}, state={state}")
         if state:
             self.active_layers.add(layer)
         else:
             self.active_layers.discard(layer)
             
-        print(f"[OVERLAY] Active layers: {self.active_layers}")
+        log_debug(f"Active layers: {self.active_layers}")
         highest_layer = max(self.active_layers) if self.active_layers else 0
         
         for widget in self.keys.values():
