@@ -220,7 +220,8 @@ class KeyWidget(QLabel):
             'FSLH': '/',
             'DELTA': 'Δ',
             'OHM': 'Ω',
-            'DEGREE': '°'
+            'DEGREE': '°',
+            'PI': 'π'
         }
         
         for k, v in zmk_names.items():
