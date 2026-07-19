@@ -38,10 +38,11 @@ POSITIONS = {
 }
 
 class KeyWidget(QLabel):
-    def __init__(self, key_data, layer_names=None, parent=None):
+    def __init__(self, key_data, layer_names=None, layer_mapping=None, parent=None):
         super().__init__(parent)
         self.key_data = key_data
         self.layer_names = layer_names or {}
+        self.layer_mapping = layer_mapping or [f"layer_{i}" for i in range(16)]
         self.index = key_data['index']
         self.is_pressed = False
         self.current_layer = 0
@@ -65,7 +66,10 @@ class KeyWidget(QLabel):
         
         # Traverse the active layers stack downwards to find the first non-empty binding (handling &trans)
         for layer in sorted_layers:
-            layer_bindings = bindings.get(str(layer), {})
+            named_layer_id = self.layer_mapping[layer] if layer < len(self.layer_mapping) else str(layer)
+            layer_bindings = bindings.get(named_layer_id, {})
+            if not layer_bindings:
+                layer_bindings = bindings.get(str(layer), {})
             l_tap = layer_bindings.get('tap', '')
             l_hold = layer_bindings.get('hold', '')
             
@@ -76,7 +80,10 @@ class KeyWidget(QLabel):
                 
         # Ultimate fallback
         if tap == "":
-            layer_bindings = bindings.get("0", {})
+            default_named_layer_id = self.layer_mapping[0] if self.layer_mapping else "layer_0"
+            layer_bindings = bindings.get(default_named_layer_id, {})
+            if not layer_bindings:
+                layer_bindings = bindings.get("0", {})
             tap = layer_bindings.get('tap', '')
             hold = layer_bindings.get('hold', '')
         
@@ -379,12 +386,21 @@ class LayoutOverlay(QWidget):
             data = json.load(f)
             
         layer_names = {}
-        for layer in data.get('layers', []):
+        for layer in data.get('namedLayers', []):
             layer_names[str(layer.get('id', ''))] = layer.get('name', '')
             
+        # Backward compatibility with old 'layers' list
+        for layer in data.get('layers', []):
+            layer_names[str(layer.get('id', ''))] = layer.get('name', '')
+
+        layer_mapping = data.get('layerMapping', [f"layer_{i}" for i in range(16)])
+        for i, named_layer_id in enumerate(layer_mapping):
+            if named_layer_id in layer_names:
+                layer_names[str(i)] = layer_names[named_layer_id]
+
         for key in data.get('keys', []):
             index = key['index']
-            widget = KeyWidget(key, layer_names=layer_names)
+            widget = KeyWidget(key, layer_names=layer_names, layer_mapping=layer_mapping)
             
             proxy = self.scene.addWidget(widget)
             
